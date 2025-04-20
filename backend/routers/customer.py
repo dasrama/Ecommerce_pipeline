@@ -5,7 +5,7 @@ from backend.models.purchase import Purchase
 
 router = APIRouter()
 
-@router.get("/customer-report")
+@router.get("/report")
 async def customer_report():
     today = datetime.now()
 
