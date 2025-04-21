@@ -1,53 +1,103 @@
-from fastapi import APIRouter
-from datetime import datetime
+from fastapi import APIRouter, Query
+from datetime import datetime, timedelta
 from backend.models.purchase import Purchase
-
+import io
+import openpyxl
+from fastapi.responses import StreamingResponse
 
 router = APIRouter()
 
+
+
+def generate_excel(data):
+    """Helper function to generate an Excel file from data."""
+    # Create an Excel workbook and sheet
+    workbook = openpyxl.Workbook()
+    sheet = workbook.active
+    sheet.title = "Customer Report"
+    
+    # Define the headers for the columns
+    headers = ["customerId", "totalSpent", "averageOrderValue", "orderCount", "loyaltyTier", "lastPurchaseDate", "isActive"]
+    sheet.append(headers)
+
+    # Populate the rows with the data
+    for row in data:
+        sheet.append([row["customerId"], row["totalSpent"], row["averageOrderValue"], row["orderCount"], row["loyaltyTier"], row["lastPurchaseDate"], row["isActive"]])
+
+    # Create an in-memory file to return as a downloadable file
+    excel_file = io.BytesIO()
+    workbook.save(excel_file)
+    excel_file.seek(0)
+
+    return excel_file
+
+
 @router.get("/report")
-async def customer_report():
-    today = datetime.now()
+async def customer_report(min_total_spent: float = Query(0.0, ge=0)):
+    six_months_ago = datetime.now() - timedelta(days=180)
 
     pipeline = [
         {
             "$group": {
                 "_id": "$customer_id",
-                "total_spend": {"$sum": "$amount"},
-                "number_of_orders": {"$sum": 1},
-                "last_purchase": {"$max": "$order_date"}
+                "totalSpent": {"$sum": "$amount"},
+                "averageOrderValue": {"$avg": "$amount"}, 
+                "orderCount": {"$sum": 1},
+                "lastPurchaseDate": {"$max": "$order_date"}
             }
         },
         {
             "$addFields": {
-                "average_order_value": {
-                    "$divide": ["$total_spend", "$number_of_orders"]
-                },
-                "recency_days": {
-                    "$dateDiff": {
-                        "startDate": "$last_purchase",
-                        "endDate": today,
-                        "unit": "day"
-                    }
-                },
-                "high_value_customer": {
-                    "$and": [
-                        {"$gt": ["$total_spend", 500]},
-                        {"$lt": [
-                            {
-                                "$dateDiff": {
-                                    "startDate": "$last_purchase",
-                                    "endDate": today,
-                                    "unit": "day"
-                                }
-                            },
-                            30
-                        ]}
+                "lastPurchaseDate": { "$toDate": "$lastPurchaseDate" },  
+                "isActive": {
+                    "$gte": [
+                        {"$toDate": "$lastPurchaseDate"},  
+                        six_months_ago  
                     ]
+                },
+                "loyaltyTier": {
+                    "$switch": {
+                        "branches": [
+                            {
+                                "case": {"$lt": ["$totalSpent", 1000]}, 
+                                "then": "Bronze"
+                            },
+                            {
+                                "case": {"$and": [{"$gte": ["$totalSpent", 1000]}, {"$lte": ["$totalSpent", 3000]}]},
+                                "then": "Silver"
+                            },
+                            {
+                                "case": {"$gt": ["$totalSpent", 3000]}, 
+                                "then": "Gold"
+                            }
+                        ],
+                        "default": "Bronze"  
+                    }
                 }
+            }
+        },
+        {
+            "$match": {
+                "totalSpent": {"$gte": min_total_spent}  
+            }
+
+        },
+        {
+            "$project": {
+                "_id": 0,
+                "customerId": "$_id",
+                "totalSpent": 1,
+                "averageOrderValue": 1,  
+                "orderCount": 1,
+                "loyaltyTier": 1 ,
+                "lastPurchaseDate": 1,
+                "isActive": 1
             }
         }
     ]
 
-    result = await Purchase.aggregate(pipeline).to_list()
-    return result
+    result = await Purchase.aggregate(pipeline).to_list(length=None)
+    excel_file = generate_excel(result)
+
+    # Return the Excel file as a downloadable response
+    return StreamingResponse(excel_file, media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", headers={"Content-Disposition": "attachment; filename=customer_report.xlsx"})
