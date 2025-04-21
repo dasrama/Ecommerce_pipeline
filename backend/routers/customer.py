@@ -5,26 +5,20 @@ import io
 import openpyxl
 from fastapi.responses import StreamingResponse
 
+
 router = APIRouter()
 
-
-
 def generate_excel(data):
-    """Helper function to generate an Excel file from data."""
-    # Create an Excel workbook and sheet
     workbook = openpyxl.Workbook()
     sheet = workbook.active
     sheet.title = "Customer Report"
     
-    # Define the headers for the columns
     headers = ["customerId", "totalSpent", "averageOrderValue", "orderCount", "loyaltyTier", "lastPurchaseDate", "isActive"]
     sheet.append(headers)
 
-    # Populate the rows with the data
     for row in data:
         sheet.append([row["customerId"], row["totalSpent"], row["averageOrderValue"], row["orderCount"], row["loyaltyTier"], row["lastPurchaseDate"], row["isActive"]])
 
-    # Create an in-memory file to return as a downloadable file
     excel_file = io.BytesIO()
     workbook.save(excel_file)
     excel_file.seek(0)
@@ -99,5 +93,4 @@ async def customer_report(min_total_spent: float = Query(0.0, ge=0)):
     result = await Purchase.aggregate(pipeline).to_list(length=None)
     excel_file = generate_excel(result)
 
-    # Return the Excel file as a downloadable response
     return StreamingResponse(excel_file, media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", headers={"Content-Disposition": "attachment; filename=customer_report.xlsx"})
