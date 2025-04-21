@@ -42,8 +42,7 @@ Before you can run this project locally, make sure you have the following instal
    - Create a `.env` file in the project root.
    - Add the following variables:
      ```env
-     DATABASE_URL=postgresql://user:password@localhost/expenseorbit
-     SECRET_KEY=your_secret_key
+     DATABASE_URL=mongo_url_from_cloud
      ```
 
 4. Start the FastAPI server:
