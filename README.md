@@ -18,8 +18,8 @@ Before you can run this project locally, make sure you have the following instal
 
 1. Clone the repository:
    ```bash
-   https://github.com/dasrama/ExpenseOrbit.git
-   cd ExpenseOrbit
+   https://github.com/dasrama/Ecommerce_pipeline.git
+   cd Ecommerce_pipeline
    ```
 
 2. Set up a virtual environment and install dependencies:
