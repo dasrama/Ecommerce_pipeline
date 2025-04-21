@@ -2,16 +2,6 @@
 
 This project demonstrates how to analyze e-commerce customer purchase data and generate insights about high-value customers using an aggregation pipeline in MongoDB. It uses **Python**, **Beanie (MongoDB ODM)**, and **MongoDB Atlas** to store and process data.
 
-## Table of Contents
-
-- [Prerequisites](#prerequisites)
-- [Installation](#installation)
-- [Running the Project](#running-the-project)
-- [Project Structure](#project-structure)
-- [Usage](#usage)
-- [Troubleshooting](#troubleshooting)
-- [License](#license)
-
 ---
 
 ## Prerequisites
@@ -26,10 +16,41 @@ Before you can run this project locally, make sure you have the following instal
 
 ## Installation
 
-Follow these steps to get your local environment set up:
-
-1. **Clone the repository**:
-
+1. Clone the repository:
    ```bash
-   git clone https://github.com/yourusername/ecommerce-pipeline.git
-   cd ecommerce-pipeline
+   https://github.com/dasrama/ExpenseOrbit.git
+   cd ExpenseOrbit
+   ```
+
+2. Set up a virtual environment and install dependencies:
+
+   - **On Windows**:
+     ```bash
+     py -3 -m venv venv
+     venv\Scripts\activate
+     pip install -r requirements.txt
+     ```
+
+   - **On macOS/Linux**:
+     ```bash
+     python3 -m venv venv
+     source venv/bin/activate
+     pip install -r requirements.txt
+     ```
+
+3. Configure environment variables:
+   - Create a `.env` file in the project root.
+   - Add the following variables:
+     ```env
+     DATABASE_URL=postgresql://user:password@localhost/expenseorbit
+     SECRET_KEY=your_secret_key
+     ```
+
+4. Start the FastAPI server:
+   ```bash
+   uvicorn backend.main:app --reload
+   ```
+
+5. Access the API documentation:
+   Open [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs) in your browser.
+
